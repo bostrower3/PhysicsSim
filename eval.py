@@ -58,4 +58,18 @@ def rollout(model,initial_state,num_steps,scripted_motion = None,gt = None):
 
 @torch.no_grad()
 def evaluate(model,inputs,cfg):
-    pass
+    
+
+    initial_state = {k: v[0][0] for k,v in inputs['features'].items()}
+
+    if 'scripted_motion' in initial_state.keys():
+        scripted_motion = inputs['features']['scripted_motion'].squeeze(0) # Remove Batch Dimensione
+    else:
+        scripted_motion = None
+
+    num_steps = inputs['features']['world_pos'].shape[1]
+    gt_traj = inputs['targets']['world_pos'].squeeze(0)
+    gt_stress = inputs['targets']['stress'].squeeze(0)
+
+    prediction = rollout(model,initial_state,num_steps,scripted_motion,gt_traj)
+

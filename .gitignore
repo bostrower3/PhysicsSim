@@ -3,3 +3,7 @@ impact_plate
 venv
 *.zip
 Data
+*.json
+*.log
+*.wandb
+wandb

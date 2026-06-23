@@ -78,3 +78,24 @@ def filter_edges_by_node_type(edges,node_type,contact = True):
         # For TFRecord Datasets only between obstacle and Normal Nodes (0 and 1)
         valid_mask = abs(node_class[dst] - node_class[src]) == 1
     return edges[:,valid_mask]
+
+def move_to_device(batch, device):
+    if hasattr(batch, "to"):
+        return batch.to(device)
+
+    if isinstance(batch, dict):
+        return {
+            k: move_to_device(v, device)
+            for k, v in batch.items()
+        }
+
+    if isinstance(batch, torch.Tensor):
+        return batch.to(device)
+
+    if isinstance(batch, list):
+        return [move_to_device(x, device) for x in batch]
+
+    if isinstance(batch, tuple):
+        return tuple(move_to_device(x, device) for x in batch)
+
+    return batch

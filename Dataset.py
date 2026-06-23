@@ -7,10 +7,10 @@ from torch.utils.data import Dataset
 
 
 class TimeStepDataset(Dataset):
-    def __init__(self,directory,noise,data_type,device = 'cuda'):
+    def __init__(self,directory,noise,device = 'cuda'):
         self.noise = noise
         
-        self.data_type = data_type
+        
         self.device = device
         self.files = []
         self.trajectories = defaultdict(list)
@@ -19,32 +19,32 @@ class TimeStepDataset(Dataset):
                 self.files.append(os.path.join(trajectory[0],frame))
             self.trajectories[trajectory[0].split('/')[-1]] = [os.path.join(trajectory[0],frame) for frame in sorted(trajectory[2])]
 
-        def __len__(self):
-            return len(self.files)
-        
-        def __get__item(self,idx):
-            data = torch.load(self.files[idx])
-            features = self.noise_config['for_features']
-            targets = self.noise_config['for_targets']
+    def __len__(self):
+        return len(self.trajectories)
+    
+    def __getitem__(self,idx):
+        data = torch.load(self.files[idx])
+        features = self.noise_config['for_features']
+        targets = self.noise_config['for_targets']
 
-            if self.noise_config['enabled']:
-                if 'scripted_motion' in data['features']:
-                    mask = (data['features']['node_type'].argmax(dim = 1) == NodeType.NORMAL).unsqueeze(1)
-                else:
-                    mask = ((data['features']['node_type'].argmax(dim = 1) == NodeType.OBSTACLE) | (data['features']['node_type'].argmax(dim = 1) == NodeType.NORMAL)).unsqueeze(1)
+        if self.noise_config['enabled']:
+            if 'scripted_motion' in data['features']:
+                mask = (data['features']['node_type'].argmax(dim = 1) == NodeType.NORMAL).unsqueeze(1)
+            else:
+                mask = ((data['features']['node_type'].argmax(dim = 1) == NodeType.OBSTACLE) | (data['features']['node_type'].argmax(dim = 1) == NodeType.NORMAL)).unsqueeze(1)
 
-                #create noise
-                noise = torch.randn_like(data['targets'][targets[0]]) * self.noise_config['std']
-                noise = torch.where(mask,noise,torch.zeros_like(noise))
+            #create noise
+            noise = torch.randn_like(data['targets'][targets[0]]) * self.noise_config['std']
+            noise = torch.where(mask,noise,torch.zeros_like(noise))
 
-                #apply noise to each variable
-                for field in features:
-                    data['features'] += noise
+            #apply noise to each variable
+            for field in features:
+                data['features'] += noise
 
-                for field in targets:
-                    data['targets'][field] += (1.0 - self.noise_config['gamma']) * noise
+            for field in targets:
+                data['targets'][field] += (1.0 - self.noise_config['gamma']) * noise
 
-            return data
+        return data
         
 class TrajectoryDataset(Dataset):
     def __init__(self,directory,cfg,device = 'cuda'):
@@ -61,7 +61,7 @@ class TrajectoryDataset(Dataset):
     def __len__(self):
         return len(self.trajectories)
     
-    def __get__item(self,idx):
+    def __getitem__(self,idx):
         frames = [torch.load(f,map_location = self.device) for f in self.trajectories[idx]]
         out = {
             'features':{},

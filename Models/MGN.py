@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from torch_scatter import scatter_add
-from Base_Model import GraphModelBase
+from Models.Base_Model import GraphModelBase
 from normalization import Normalizer
 from torch_geometric.data import Data
 import torch.nn.functional as F
@@ -118,8 +118,9 @@ class MGN_Model(GraphModelBase):
                  network_params,
                  model_params,
                  cfg,
+                 accumulate,
                  device = 'cuda'):
-        super().__init()
+        super().__init__()
 
         self.net = MeshGraphNetwork(**network_params).to(device)
         self.device = device
@@ -132,7 +133,8 @@ class MGN_Model(GraphModelBase):
         self.node_normalizer = Normalizer(network_params['node_encoder_input_size']).to(device)
 
         self.node_features = [feature for feature in cfg['Node_Features']]
-        self.world_radius = model_params['world_radius']
+        self.world_radius = model_params['radius']
+        self.accumulate = accumulate
 
     def build_graph(self,inputs):
         graph = Data()

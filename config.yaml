@@ -6,9 +6,17 @@ experiment:
   seed: 42
 
 paths:
-  data_root: "./Data"
+  data_root: "./r-bzhu36-0/PhysicsSim/Data"
   data_folder: "Deforming_Plate"
   wandb_dir: "./wandb"
+
+#=======================
+# Weights and Biases
+#=======================
+wandb:
+  checkpoint_dir: "./r-bzhu36-0/PhysicsSim/"
+  project: "MeshGraphNet"
+  name: "Intitial_Run"
 
 
 #=======================
@@ -76,4 +84,5 @@ optim:
 training:
   epochs: 5
   normalizer_steps: 1000
+
 
