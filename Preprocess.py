@@ -137,11 +137,11 @@ def TFRecordParse(dataset_path,output_folder):
                     lap_pe = torch.tensor(lap_pes[t],dtype = torch.float)
                     HCMT_Pooling = {
                         'Senders':
-                        [torch.as_tensor(s,dtype = torch.long) for s in senders],
+                        [torch.as_tensor(s,dtype = torch.long) for s in senders[t]],
                         'Recievers':
-                        [torch.as_tensor(r,dtype = torch.long) for r in recievers],
+                        [torch.as_tensor(r,dtype = torch.long) for r in recievers[t]],
                         'IDs':
-                        [torch.as_tensor(i,dtype = torch.long) for i in ids]
+                        [torch.as_tensor(i,dtype = torch.long) for i in ids[t]]
                     }
                     features['density'] = density
                     features['youngs_modulus'] = young_modulus

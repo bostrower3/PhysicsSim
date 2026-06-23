@@ -1,0 +1,66 @@
+#=======================
+# Experiment
+#=======================
+
+experiment:
+  seed: 42
+
+paths:
+  data_root: "./Data"
+  data_folder: "Deforming_Plate"
+  wandb_dir: "./wandb"
+
+
+#=======================
+# Dataset/Dataloader
+#=======================
+
+data:
+  noise:
+    enabled: True
+    std: 0.003
+    gamma: 0.1
+    for_features: ['world_pos','velocity']
+    for_targets: ['velocity']
+
+#=======================
+# Model Selection
+#=======================
+
+model:
+  type: "MGN"
+
+  MGN:
+    output_size: 4
+    node_encoder_input_size: 27
+    mesh_edge_encoder_input_size: 8
+    world_edge_encoder_input_size: 4
+    latent_size: 128
+    num_mlp_layers: 2
+    message_passing_steps: 10
+
+  HCMT:
+    output_size: 4
+    node_encoder_input_size: 27
+    mesh_edge_encoder_input_size: 8
+    world_edge_encoder_input_size: 4
+    latent_size: 128
+    num_mlp_layers: 2
+    num_attention_heads: 4
+
+#=======================
+# Optimizer
+#=======================
+
+optim:
+  type: "Adam"
+  lr: 1e-4
+  weight_decay: 1e-6
+
+#=======================
+# Training
+#=======================
+training:
+  epochs: 5
+  normalizer_steps: 1000
+  
