@@ -23,12 +23,25 @@ data:
     for_features: ['world_pos','velocity']
     for_targets: ['velocity']
 
+
+#=======================
+# Features
+#=======================
+Node_Features:
+  - world_pos
+  - stress
+  - node_type
+  - velocity
+  - density
+  - youngs_modulus
+
 #=======================
 # Model Selection
 #=======================
 
 model:
   type: "MGN"
+  radius: 0.003
 
   MGN:
     output_size: 4
@@ -63,4 +76,4 @@ optim:
 training:
   epochs: 5
   normalizer_steps: 1000
-  
+
