@@ -74,8 +74,8 @@ def train(cfg):
     ## Optimizer
     optimizer = torch.optim.Adam(
         model.net.parameters(),
-        lr = cfg['optim']['lr'],
-        weight_decay = cfg['optim']['weight_decay']
+        lr = float(cfg['optim']['lr']),
+        weight_decay = float(cfg['optim']['weight_decay'])
     )
     print("DataLoaders and optimizer initated!")
     ## Training Loop
@@ -94,23 +94,33 @@ def train(cfg):
         for batch_idx, batch in enumerate(train_dataloader):
             batch = move_to_device(batch, device)
 
-            optimizer.zero_grad()
-
-            loss = model.loss(batch)
             
-            loss.backward()
-            optimizer.step()
+            if global_step < cfg['training']['normalizer_steps']:
+                with torch.no_grad():
+                    loss = model.loss(batch)
+                
+                if global_step+1 == cfg['training']['normalizer_steps']:
+                    print('Normalizing steps are done!')
+            else:
+                
+                optimizer.zero_grad()
+                loss = model.loss(batch)
 
-            total_train_loss += loss.item()
+                loss.backward()
+                optimizer.step()
 
-            wandb.log(
-                {
-                    "train/loss_step": loss.item(),
-                    "epoch": epoch,
-                    "lr": optimizer.param_groups[0]["lr"],
-                },
-                step=global_step
-            )
+            
+                total_train_loss += loss.item()
+            
+            if global_step % 10 == 0:
+                wandb.log(
+                    {
+                        "train/loss_step": loss.item(),
+                        "epoch": epoch,
+                        "lr": optimizer.param_groups[0]["lr"],
+                    },
+                    step=global_step
+                )
 
             global_step += 1
 

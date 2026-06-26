@@ -17,7 +17,7 @@ class Normalizer(nn.Module):
     def forward(self,batched_data,accumulate = True):
         if accumulate and self.num_accumulations < self.max_accumulations:
             self._accumulate(batched_data)
-        return (batched_data-self.mean_()) / self._std_with_epsilon()
+        return (batched_data-self._mean()) / self._std_with_epsilon()
     
     def inverse(self,normalized_data):
         return normalized_data * self._std_with_epsilon() + self._mean()

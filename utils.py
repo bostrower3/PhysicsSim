@@ -14,8 +14,10 @@ class NodeType(enum.IntEnum):
     SIZE = 9
 
 def cells_to_edges(cells):
+    if len(cells.shape) == 3:
+        cells = cells.squeeze(0)
     _,cols = cells.shape
-
+    
     col_combinations = []
     for i in range(cols):
         for j in range(i+1,cols):
@@ -35,11 +37,11 @@ def cells_to_edges(cells):
     #Convert to bidirectional
     senders = unique_edges[:,0]
     recievers = unique_edges[:,1]
+    
+    all_senders = torch.cat([senders,recievers],dim = 0)
+    all_recievers = torch.cat([recievers,senders],dim = 0)
 
-    all_senders = torch.cat([senders,recievers],dim = 0,dtype = torch.long)
-    all_recievers = torch.cat([recievers,senders],dim = 0, dtype = torch.long)
-
-    return all_senders,all_recievers
+    return all_senders.long(),all_recievers.long()
 
 def canonicalize_edges(edge_index):
     src,dst = edge_index

@@ -6,7 +6,7 @@ experiment:
   seed: 42
 
 paths:
-  data_root: "./r-bzhu36-0/PhysicsSim/Data"
+  data_root: "./Data"
   data_folder: "Deforming_Plate"
   wandb_dir: "./wandb"
 
@@ -14,7 +14,7 @@ paths:
 # Weights and Biases
 #=======================
 wandb:
-  checkpoint_dir: "./r-bzhu36-0/PhysicsSim/"
+  checkpoint_dir: "."
   project: "MeshGraphNet"
   name: "Intitial_Run"
 
@@ -49,11 +49,11 @@ Node_Features:
 
 model:
   type: "MGN"
-  radius: 0.003
+  radius: 0.03
 
   MGN:
     output_size: 4
-    node_encoder_input_size: 27
+    node_encoder_input_size: 16
     mesh_edge_encoder_input_size: 8
     world_edge_encoder_input_size: 4
     latent_size: 128

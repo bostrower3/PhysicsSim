@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 class TimeStepDataset(Dataset):
     def __init__(self,directory,noise,device = 'cuda'):
-        self.noise = noise
+        self.noise_config = noise
         
         
         self.device = device
@@ -39,7 +39,7 @@ class TimeStepDataset(Dataset):
 
             #apply noise to each variable
             for field in features:
-                data['features'] += noise
+                data['features'][field] += noise
 
             for field in targets:
                 data['targets'][field] += (1.0 - self.noise_config['gamma']) * noise

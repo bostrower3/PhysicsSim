@@ -18,15 +18,15 @@ class GraphNetBlock(nn.Module):
         super().__init__()
         
         self.latent_size = latent_size
-        self.mesh_edge_model = mesh_edge_model_fn
-        self.world_edge_model = world_edge_model_fn
-        self.node_model = node_model_fn
+        self.mesh_edge_model = mesh_edge_model_fn()
+        self.world_edge_model = world_edge_model_fn()
+        self.node_model = node_model_fn()
 
     def forward(self,graph):
 
         #Mesh Edge Update
         sender_mesh = graph.x[graph.mesh_edge_index[:,0]]
-        reciever_mesh = graph.x[graph.mesh_edge_index[:,0]]
+        reciever_mesh = graph.x[graph.mesh_edge_index[:,1]]
         edge_input = torch.cat([sender_mesh,reciever_mesh,graph.mesh_edge_features],dim = -1)
         mesh_updated_edge_attr = self.mesh_edge_model(edge_input)
 
@@ -36,7 +36,8 @@ class GraphNetBlock(nn.Module):
 
         #Contact Edge Update
         sender_world = graph.x[graph.world_edge_index[:,0]]
-        reciever_world = graph.x[graph.world_edge_index[:,0]]
+        reciever_world = graph.x[graph.world_edge_index[:,1]]
+
         edge_input = torch.cat([sender_world,reciever_world,graph.world_edge_features],dim = -1)
         world_updated_edge_attr = self.mesh_edge_model(edge_input)
 
@@ -139,12 +140,15 @@ class MGN_Model(GraphModelBase):
     def build_graph(self,inputs):
         graph = Data()
         feats = inputs['features']
-
+        for feat in feats:
+            if len(feats[feat].shape) == 3:
+                feats[feat] = feats[feat].squeeze(0)
         s,r = cells_to_edges(feats['cells'])
 
         if 'scripted_motion' in feats.keys():
-            mask = ()
-
+            mask = (feats['node_type'].argmax(dim = 1) == NodeType.OBSTACLE)
+            feats['scripted_motion']
+        
         radius_edges = radius_graph(
             x = feats['world_pos'],
             r = self.world_radius,
@@ -161,6 +165,7 @@ class MGN_Model(GraphModelBase):
             contact_edges[0,:],
             contact_edges[1,:]
         ],dim = 1).reshape(-1,2)
+        
         mesh_edges = torch.stack((s,r),dim = 1).reshape(-1,2)
 
 
@@ -169,9 +174,9 @@ class MGN_Model(GraphModelBase):
         node_features = torch.hstack(
             [feats[feature] for feature in feats.keys()])
         
-        mesh_positions = feats['mesh_pos'][s] = feats['mesh_pos'][r]
-        world_positions = feats['world_pos'][s] = feats['world_pos'][r]
-        contact_positions = feats['world_pos'][contact_edges[0,:]] = feats['world_pos'][contact_edges[1,:]]
+        mesh_positions = feats['mesh_pos'][s] - feats['mesh_pos'][r]
+        world_positions = feats['world_pos'][s] - feats['world_pos'][r]
+        contact_positions = feats['world_pos'][contact_edges[:,0]] - feats['world_pos'][contact_edges[:,1]]
 
         mesh_edge_features = torch.cat(
             (world_positions,
@@ -202,5 +207,5 @@ class MGN_Model(GraphModelBase):
         graph.world_edge_features = world_edge_features
         graph.mesh_edge_index = mesh_edges
         graph.world_edge_index = contact_edges
-
+        
         return graph.to(self.device)

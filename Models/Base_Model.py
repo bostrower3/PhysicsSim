@@ -20,12 +20,12 @@ class GraphModelBase(nn.Module,ABC):
         # Set up
         graph = self.build_graph(inputs)
         pred = self.net(graph)
-
+        
         ## Predictions
         if pred.shape[1] == 4:
-            velocity_pred = pred[:,3]
+            velocity_pred = pred[:,:3]
         elif pred.shape[1] == 3:
-            velocity_pred = pred[:,2]
+            velocity_pred = pred[:,:2]
         else:
             raise ValueError("Dimensions of problem are off")
         stress_pred = pred[:,-1]
@@ -36,10 +36,10 @@ class GraphModelBase(nn.Module,ABC):
         else:
             mask = ((inputs['features']['node_type'].argmax(dim = 1) == NodeType.OBSTACLE) | (inputs['features']['node_type'].argmax(dim = 1) == NodeType.NORMAL))
 
-
-        normalized_velocity = self.velocity_normalizer(inputs['targets']['velocity'],self.accumulate)
-        normalized_stress = self.stress_normalizer(inputs['targets']['stress'],self.accumulate)
-
+        
+        normalized_velocity = self.velocity_normalizer(inputs['targets']['velocity'].squeeze(0),self.accumulate)
+        normalized_stress = self.stress_normalizer(inputs['targets']['stress'].squeeze(0),self.accumulate)
+        
         velocity_error = torch.sum((velocity_pred - normalized_velocity)**2,dim = 1)
         stress_error = torch.sum((stress_pred - normalized_stress)**2,dim = 1)
 
