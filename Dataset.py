@@ -49,7 +49,7 @@ class TimeStepDataset(Dataset):
 class TrajectoryDataset(Dataset):
     def __init__(self,directory,cfg,device = 'cuda'):
         self.device = device
-        
+        self.directory = directory
         self.cfg= cfg
         self.trajectories = defaultdict(list)
         self.trajectory_list = os.listdir(directory)
@@ -72,10 +72,18 @@ class TrajectoryDataset(Dataset):
             group_keys = list(frames[0][group].keys())
 
             for key in group_keys:
-                trajectory_stack = torch.stack(
-                    [frame[group][key] for frame in frames],
-                    dim = 0
-                )
+                if key == 'velocity':
+                        dim = frames[0]['features'][key].shape[-1]
+                        windows = frames[0]['features'][key].shape[0]
+                        trajectory_stack = torch.stack(
+                        [frame[group][key].reshape(-1,dim * windows) for frame in frames],
+                        dim = 0
+                    )
+                else:
+                    trajectory_stack = torch.stack(
+                        [frame[group][key] for frame in frames],
+                        dim = 0
+                    )
                 out[group][key] = trajectory_stack
 
         return out

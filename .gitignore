@@ -7,3 +7,5 @@ Data
 *.log
 *.wandb
 wandb
+*.pkl
+*.pt

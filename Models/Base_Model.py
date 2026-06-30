@@ -59,15 +59,15 @@ class GraphModelBase(nn.Module,ABC):
         #Will always predict velocity displacement + Stress
         #3D problems (velocity Nx3 + stress Nx1)
         if pred.shape[1] == 4:
-            velocity_pred = pred[:,3]
+            velocity_pred = pred[:,:3]
         elif pred.shape[1] == 3:
-            velocity_pred = pred[:,2]
+            velocity_pred = pred[:,:2]
         else:
             raise ValueError("Dimensions of problem are off")
 
         stress_pred = pred[:,-1]
 
-        outputs['world_pos'] = inputs['world_pos'] + self.velocity_normalizer.inverse(velocity_pred)
-        outputs['stress'] = self.stress_normalizer.inverse(stress_pred)
+        outputs['world_pos'] = inputs['features']['world_pos'] + self.velocity_normalizer.inverse(velocity_pred)
+        outputs['stress'] = self.stress_normalizer.inverse(stress_pred).unsqueeze(-1)
 
         return outputs

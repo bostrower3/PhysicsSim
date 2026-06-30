@@ -6,7 +6,7 @@ experiment:
   seed: 42
 
 paths:
-  data_root: "./Data"
+  data_root: "/storage/home/hcoda1/1/bostrower3/r-bzhu36-0/PhysicsSim/Data/"
   data_folder: "Deforming_Plate"
   wandb_dir: "./wandb"
 
@@ -36,12 +36,18 @@ data:
 # Features
 #=======================
 Node_Features:
+  # Dataset Common
   - world_pos
   - stress
   - node_type
-  - velocity
-  - density
-  - youngs_modulus
+  #- velocity
+
+  #Deforming Plate
+  - scripted_motion
+
+  #Impact Plate
+  #- density
+  #- youngs_modulus
 
 #=======================
 # Model Selection
@@ -86,3 +92,19 @@ training:
   normalizer_steps: 1000
 
 
+#=======================
+# Eval
+#=======================
+Eval:
+  model_name: best_model.pt
+  num_rollouts: 10
+  Pickle_name: Rollout.pkl
+  Eval_MSE_Steps: [1,24,49,74,99,124,149,174,199,224,249,274,299,324,349,374,399]
+
+#=======================
+# Plotting
+#=======================
+Plot:
+  plot_name: giffy.gif
+  num_rollouts: 10
+  Pickle_name: Rollout.pkl

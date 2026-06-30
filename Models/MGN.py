@@ -141,13 +141,13 @@ class MGN_Model(GraphModelBase):
         graph = Data()
         feats = inputs['features']
         for feat in feats:
-            if len(feats[feat].shape) == 3:
+            if len(feats[feat].shape) >= 3:
                 feats[feat] = feats[feat].squeeze(0)
         s,r = cells_to_edges(feats['cells'])
 
         if 'scripted_motion' in feats.keys():
-            mask = (feats['node_type'].argmax(dim = 1) == NodeType.OBSTACLE)
-            feats['scripted_motion']
+            mask = (feats['node_type'].argmax(dim = 1) != NodeType.OBSTACLE)
+            feats['scripted_motion'][mask] = 0
         
         radius_edges = radius_graph(
             x = feats['world_pos'],
@@ -170,9 +170,15 @@ class MGN_Model(GraphModelBase):
 
 
         feats.pop('cells')
-
-        node_features = torch.hstack(
-            [feats[feature] for feature in feats.keys()])
+        dim = feats['world_pos'].shape[1]
+        velocity_windows = feats['velocity'].shape[0]
+        if len(feats['velocity'].shape) == 3:
+            feats['velocity'] = feats['velocity'].reshape(-1,dim * velocity_windows)
+        
+        node_features = torch.hstack([
+            feats[feature]
+            for feature in self.node_features
+])
         
         mesh_positions = feats['mesh_pos'][s] - feats['mesh_pos'][r]
         world_positions = feats['world_pos'][s] - feats['world_pos'][r]

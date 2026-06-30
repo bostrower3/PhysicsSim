@@ -8,14 +8,27 @@ import glob
 from torch_geometric.loader import DataLoader
 import wandb 
 import os
+import time
 
 from Models.MGN import MGN_Model
 from Dataset import TrajectoryDataset,TimeStepDataset
 from utils import move_to_device
+from eval import evaluate
 model_registry = {
     'MGN':MGN_Model,
     'HCMT':None
 }
+
+def load_model(cfg,device):
+    model_type = cfg['model']['type']
+    network_params = cfg['model'][model_type]
+    model_params = cfg['model']
+    
+    print("Loading Model...")
+    model_class = model_registry[model_type]
+    model = model_class(network_params, model_params, cfg, device = device, accumulate = 1)
+    print(f"Model {model_type} Loaded!")
+    return model
 
 def train(cfg):
 
@@ -30,15 +43,9 @@ def train(cfg):
 
     path = cfg['paths']['data_root'] +'/' + cfg['paths']['data_folder']
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model_type = cfg['model']['type']
-    network_params = cfg['model'][model_type]
-    model_params = cfg['model']
+    print('Using device...',device)
     
-    print("Loading Model...")
-    model_class = model_registry[model_type]
-    model = model_class(network_params, model_params, cfg, device = device, accumulate = 1)
-    print(f"Model {model_type} Loaded!")
-
+    model = load_model(cfg,device)
     
     ## Train Dataset
     train_dataset = TimeStepDataset(
@@ -77,13 +84,21 @@ def train(cfg):
         lr = float(cfg['optim']['lr']),
         weight_decay = float(cfg['optim']['weight_decay'])
     )
-    print("DataLoaders and optimizer initated!")
+    num_epochs = cfg['optim'].get('epochs', 100)
+    decay_steps = len(glob.glob(f"{path}/train/*/*.pt")) * num_epochs
+    total_decay_steps = float(decay_steps)
+    gamma = 10 ** (-2/total_decay_steps)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(
+        optimizer = optimizer,
+        gamma = gamma
+    )
+    print("DataLoaders and Optimizer initiated!")
     ## Training Loop
     # Optional: logs gradients/parameter histograms.
     # Can slow things down for large GNNs, so log less often.
     wandb.watch(model.net, log="gradients", log_freq=100)
 
-    num_epochs = cfg['optim'].get('epochs', 100)
+    
     global_step = 0
     best_val_loss = float("inf")
 
@@ -107,8 +122,9 @@ def train(cfg):
                 loss = model.loss(batch)
 
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
-
+                scheduler.step()
             
                 total_train_loss += loss.item()
             
@@ -175,8 +191,59 @@ def train(cfg):
 
     run.finish()
 
-def eval(cfg,model):
-    pass
+def eval(cfg):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print('Using device...',device)
+    
+    model = load_model(cfg,device)
+
+    path = cfg['paths']['data_root'] +'/' + cfg['paths']['data_folder']
+    test_data = TrajectoryDataset(
+        directory = path + '/test',
+        cfg = cfg,
+        device = device
+    )
+    test_dataloader = DataLoader(
+        test_data,
+        batch_size=1,
+        shuffle= True,
+        num_workers = 0,
+        pin_memory = False
+    )
+
+    load_dir  = f"{cfg['wandb']['checkpoint_dir']}/{cfg['wandb']['project']}/{cfg['wandb']['name']}"
+    state_dict = torch.load(f"{load_dir}/best_model.pt",map_location = device)['model_state_dict']
+    
+    #new_state_dict = {k.replace(".module.",".") for k,v in state_dict.items()}
+    #new_state_dict = {k.replace("_orig_mod.",".") for k,v in new_state_dict.items()}
+
+    model.load_state_dict(state_dict)
+    print('Model weights loaded!')
+    model.eval()
+    model.to(device)
+    trajectories = []
+    scalars = []
+    start = time.time()
+    for i,batch in enumerate(test_dataloader):
+        if i == cfg['Eval']['num_rollouts']:
+            break
+        print(f'Rollout Trajectory {i+1}')
+        batch = move_to_device(batch, device)
+        scalar,traj = evaluate(model,batch,cfg)
+        scalars.append(scalar)
+        trajectories.append(traj)
+    end = time.time() 
+    total_time = time.strftime('%M:%S',time.gmtime(end-start))
+    print(f"{cfg['Eval']['num_rollouts']} Rollouts took {total_time}")
+    with open(Path(load_dir)/'Eval.txt', 'w') as f:
+        for variable in scalars:
+            for key in variable: 
+                avg = np.mean([s[key] for s in scalars[variable]])
+                f.write(f"{key}: {avg}\n")
+
+    with open(Path(load_dir)/cfg['Eval']['Pickle_name'], 'wb') as f:
+        pickle.dump(trajectories,f)
+
 
 if __name__ == "__main__":
     print('Starting!')
@@ -190,7 +257,7 @@ if __name__ == "__main__":
 
     raw_cfg = yaml.safe_load(open(args.model_config,"r"))
 
-    
+
     if args.mode == "train":
         print('Beginning Training!')
         train(raw_cfg)

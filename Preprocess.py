@@ -120,7 +120,7 @@ def TFRecordParse(dataset_path,output_folder):
                     velocity = torch.zeros_like(target_velocity).unsqueeze(0)
 
                 else:
-                    velocity = torch.tensor(world_positions[t+1] - world_positions[t],dtype = torch.float)
+                    velocity = torch.tensor(world_positions[t] - world_positions[t-1],dtype = torch.float)
 
                 features['cells'] = cell
                 features['node_type'] = node_type
