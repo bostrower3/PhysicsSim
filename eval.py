@@ -80,15 +80,15 @@ def evaluate(model,inputs,cfg):
         f'pos_mse_{h}_steps': MSE_positions[0:h].mean().item() for h in cfg['Eval']['Eval_MSE_Steps'] if h < num_steps
     }
     stress_scalars = {
-        f'pos_mse_{h}_steps': MSE_Stress[0:h].mean().item() for h in cfg['Eval']['Eval_MSE_Steps'] if h < num_steps
+        f'stress_mse_{h}_steps': MSE_Stress[0:h].mean().item() for h in cfg['Eval']['Eval_MSE_Steps'] if h < num_steps
     }
     scalars = pos_scalars | stress_scalars
 
     traj_ops = {
-        'cells':inputs['features']['cells'].squeeze(0),
-        'gt_stress':gt_stress,
-        'pred_stress':prediction['stresses'],
-        'gt_pos':gt_traj,
-        'pred_pos':prediction['positions']
+        'cells':inputs['features']['cells'].squeeze(0).cpu(),
+        'gt_stress':gt_stress.cpu(),
+        'pred_stress':prediction['stresses'].cpu(),
+        'gt_pos':gt_traj.cpu(),
+        'pred_pos':prediction['positions'].cpu()
     }
     return scalars,traj_ops

@@ -106,5 +106,5 @@ Eval:
 #=======================
 Plot:
   plot_name: giffy.gif
-  num_rollouts: 10
-  Pickle_name: Rollout.pkl
+  skip_frames: 5
+  

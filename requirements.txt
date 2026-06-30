@@ -3,3 +3,5 @@ torch_geometric == 2.6.1
 torch-scatter -f https://data.pyg.org/whl/torch-2.8.0+cu128.html
 torch-cluster -f https://data.pyg.org/whl/torch-2.8.0+cu128.html
 wandb == 0.26.1
+pyvista == 0.46.5
+imageio == 2.37.2

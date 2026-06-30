@@ -40,6 +40,8 @@ def train(cfg):
     )
     save_dir = f"{cfg['wandb']['checkpoint_dir']}/{cfg['wandb']['project']}/{cfg['wandb']['name']}"
     os.makedirs(save_dir,exist_ok= True)
+    with open(f"{save_dir}/config.yaml",'w') as f:
+        yaml.safe_dump(cfg,f,sort_keys = False)
 
     path = cfg['paths']['data_root'] +'/' + cfg['paths']['data_folder']
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -235,12 +237,17 @@ def eval(cfg):
     end = time.time() 
     total_time = time.strftime('%M:%S',time.gmtime(end-start))
     print(f"{cfg['Eval']['num_rollouts']} Rollouts took {total_time}")
+    all_keys = set()
+    for s in scalars:
+        all_keys.update(s.keys())
     with open(Path(load_dir)/'Eval.txt', 'w') as f:
-        for variable in scalars:
-            for key in variable: 
-                avg = np.mean([s[key] for s in scalars[variable]])
-                f.write(f"{key}: {avg}\n")
+        for key in all_keys:
+            values = [s[key] for s in scalars if key in s]
+            avg = np.mean(values)
+            f.write(f"{key}: {avg}\n")
+            print(f"{key}: {avg}")
 
+    
     with open(Path(load_dir)/cfg['Eval']['Pickle_name'], 'wb') as f:
         pickle.dump(trajectories,f)
 

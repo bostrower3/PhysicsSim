@@ -9,3 +9,5 @@ Data
 wandb
 *.pkl
 *.pt
+*.yaml
+!./config.yaml
